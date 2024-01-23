@@ -6,6 +6,8 @@ import * as error from 'lib0/error'
 import * as logging from 'lib0/logging'
 import Redis from 'ioredis'
 
+const PREFERRED_TRIM_SIZE = 100;
+
 const logger = logging.createModuleLogger('y-redis')
 
 /**
@@ -97,6 +99,16 @@ export class PersistenceDoc {
       }
     })
   }
+
+  flush() {
+    const update = Y.encodeStateAsUpdate(this.doc)
+    return this.rp.redis.rpushBuffer(this.name + ":updates", Buffer.from(update)).then((len) => {
+      this.rp.redis.ltrim(this.name + ":updates", len - 1, -1)
+    }).then(() => {
+      this._clock = 0;
+      this._fetchingClock = 0;
+    });
+  }
 }
 
 /**
@@ -125,7 +137,7 @@ export class RedisPersistence extends Observable {
      * @type {Map<string,PersistenceDoc>}
      */
     this.docs = new Map()
-    this.sub.on('message', (channel, sclock) => {
+    this.sub.on('message', async (channel, sclock) => {
       // console.log('message', channel, sclock)
       const pdoc = this.docs.get(channel)
       if (pdoc) {
@@ -137,8 +149,11 @@ export class RedisPersistence extends Observable {
             pdoc._fetchingClock = clock
           }
           if (!isCurrentlyFetching) {
-            pdoc.getUpdates()
+            await pdoc.getUpdates()
           }
+        }
+        if (clock > PREFERRED_TRIM_SIZE) {
+          pdoc.flush();
         }
       } else {
         this.sub.unsubscribe(channel)
