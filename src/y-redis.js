@@ -144,9 +144,7 @@ export class RedisPersistence extends Observable {
         if (pdoc._fetchingClock < clock) {
           // do not query doc updates if this document is currently already fetching
           const isCurrentlyFetching = pdoc._fetchingClock !== pdoc._clock
-          if (pdoc._fetchingClock < clock) {
-            pdoc._fetchingClock = clock
-          }
+          pdoc._fetchingClock = clock
           if (!isCurrentlyFetching) {
             await pdoc.getUpdates()
           }
