@@ -103,10 +103,9 @@ export class PersistenceDoc {
   flush() {
     const update = Y.encodeStateAsUpdate(this.doc)
     return this.rp.redis.rpushBuffer(this.name + ":updates", Buffer.from(update)).then((len) => {
-      this.rp.redis.ltrim(this.name + ":updates", len - 1, -1)
+      return this.rp.redis.ltrim(this.name + ":updates", len - 1, -1)
     }).then(() => {
-      this._clock = 0;
-      this._fetchingClock = 0;
+      this._clock = this._fetchingClock = 1;
     });
   }
 }
