@@ -6,8 +6,6 @@ import * as error from 'lib0/error'
 import * as logging from 'lib0/logging'
 import Redis from 'ioredis'
 
-const PREFERRED_TRIM_SIZE = 100;
-
 const logger = logging.createModuleLogger('y-redis')
 
 /**
@@ -127,8 +125,9 @@ export class RedisPersistence extends Observable {
    * @param {Object} [opts]
    * @param {Object|null} [opts.redisOpts]
    * @param {Array<Object>|null} [opts.redisClusterOpts]
+   * @param {number|null} [opts.preferredTrimSize]
    */
-  constructor ({ redisOpts = /** @type {any} */ (null), redisClusterOpts = /** @type {any} */ (null) } = {}) {
+  constructor ({ redisOpts = /** @type {any} */ (null), redisClusterOpts = /** @type {any} */ (null), preferredTrimSize = (null) } = {}) {
     super()
     this.redis = createRedisInstance(redisOpts, redisClusterOpts)
     this.sub = /** @type {Redis.Redis} */ (createRedisInstance(redisOpts, redisClusterOpts))
@@ -149,7 +148,7 @@ export class RedisPersistence extends Observable {
             await pdoc.getUpdates()
           }
         }
-        if (clock > PREFERRED_TRIM_SIZE) {
+        if (preferredTrimSize && clock > preferredTrimSize) {
           pdoc.flush();
         }
       } else {
